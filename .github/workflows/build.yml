@@ -1,0 +1,76 @@
+name: Build Installers
+
+on:
+  push:
+    tags:
+      - "v*"           # triggered on version tags like v1.0.0
+  workflow_dispatch:   # allow manual runs from the Actions tab
+
+permissions:
+  contents: write      # needed to upload release assets
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            artifact_name: CanvasStudyHelp-Windows.exe
+            build_path: dist/CanvasStudyHelp.exe
+          - os: macos-latest
+            artifact_name: CanvasStudyHelp-macOS.zip
+            build_path: dist/CanvasStudyHelp.app
+          - os: ubuntu-latest
+            artifact_name: CanvasStudyHelp-Linux
+            build_path: dist/CanvasStudyHelp
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install PyInstaller
+        run: pip install pyinstaller
+
+      - name: Build with PyInstaller
+        run: pyinstaller canvas-study.spec --noconfirm
+
+      # macOS: zip the .app bundle so it can be uploaded as a single file
+      - name: Zip macOS app bundle
+        if: runner.os == 'macOS'
+        run: |
+          cd dist
+          zip -r CanvasStudyHelp-macOS.zip CanvasStudyHelp.app
+          mv CanvasStudyHelp-macOS.zip ../
+
+      # Windows & Linux: rename to include OS name for clarity
+      - name: Rename Windows executable
+        if: runner.os == 'Windows'
+        run: copy dist\CanvasStudyHelp.exe CanvasStudyHelp-Windows.exe
+        shell: cmd
+
+      - name: Rename Linux executable
+        if: runner.os == 'Linux'
+        run: cp dist/CanvasStudyHelp CanvasStudyHelp-Linux && chmod +x CanvasStudyHelp-Linux
+
+      # Upload as build artifact (always available)
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.artifact_name }}
+          retention-days: 30
+
+      # Upload to GitHub Release when triggered by a tag
+      - name: Upload to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.artifact_name }}
+          generate_release_notes: true
