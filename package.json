@@ -1,0 +1,50 @@
+{
+  "name": "canvas-study-help",
+  "version": "1.0.0",
+  "description": "AI-powered Canvas LMS study assistant – Electron tray app",
+  "main": "src/main/index.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "lint": "eslint src/",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "39.8.9",
+    "electron-builder": "^26.8.1",
+    "eslint": "^8.57.1"
+  },
+  "build": {
+    "appId": "com.canvasstudyhelp.app",
+    "productName": "Canvas Study Help",
+    "copyright": "Copyright © 2025 Canvas Study Help",
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "canvas-app.html"
+    ],
+    "mac": {
+      "target": [{ "target": "dmg", "arch": ["x64", "arm64"] }],
+      "icon": "assets/icon.icns",
+      "category": "public.app-category.education",
+      "darkModeSupport": true,
+      "extendInfo": {
+        "LSUIElement": true
+      }
+    },
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "icon": "assets/icon.ico"
+    },
+    "linux": {
+      "target": [{ "target": "AppImage", "arch": ["x64"] }],
+      "icon": "assets/tray-icon.png",
+      "category": "Education"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}
