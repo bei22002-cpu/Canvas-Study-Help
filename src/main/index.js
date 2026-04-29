@@ -39,6 +39,10 @@ if (!gotTheLock) {
  * Validate that a Canvas domain string is a safe external hostname.
  * Rejects private/loopback IPs and anything that isn't a plain hostname
  * to prevent SSRF attacks against internal services.
+ *
+ * Note: The proxy is intentionally designed to forward Canvas API requests to
+ * the user-supplied institution domain (e.g. "myschool.instructure.com").
+ * Domain validation here ensures only well-formed external hostnames are used.
  */
 function isValidCanvasDomain(domain) {
   if (!domain || domain.length > 253) return false;
@@ -46,8 +50,9 @@ function isValidCanvasDomain(domain) {
   if (/[/:@?#]/.test(domain)) return false;
   // Must look like a valid DNS hostname
   if (!/^[a-zA-Z0-9]([a-zA-Z0-9\-.]*[a-zA-Z0-9])?$/.test(domain)) return false;
-  // Block loopback and private-network addresses
-  if (/^(localhost|127\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.|0\.0\.0\.0)/i.test(domain)) return false;
+  // Block loopback and private-network IPv4 ranges (RFC 1918 / RFC 5735)
+  if (/^(localhost|127\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|192\.168\.|0\.0\.0\.0)/i.test(domain)) return false;
+  // Block IPv6 loopback and Unique Local Addresses (fc00::/7)
   if (/^::1$|^fc[0-9a-f]{2}:|^fd[0-9a-f]{2}:/i.test(domain)) return false;
   return true;
 }
