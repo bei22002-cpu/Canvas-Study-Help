@@ -34,6 +34,24 @@ if (!gotTheLock) {
 }
 
 // ─── Canvas API proxy (Node.js port of canvas-proxy.py) ────────────────────
+
+/**
+ * Validate that a Canvas domain string is a safe external hostname.
+ * Rejects private/loopback IPs and anything that isn't a plain hostname
+ * to prevent SSRF attacks against internal services.
+ */
+function isValidCanvasDomain(domain) {
+  if (!domain || domain.length > 253) return false;
+  // No embedded protocol, path, credentials, or port
+  if (/[/:@?#]/.test(domain)) return false;
+  // Must look like a valid DNS hostname
+  if (!/^[a-zA-Z0-9]([a-zA-Z0-9\-.]*[a-zA-Z0-9])?$/.test(domain)) return false;
+  // Block loopback and private-network addresses
+  if (/^(localhost|127\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.|0\.0\.0\.0)/i.test(domain)) return false;
+  if (/^::1$|^fc[0-9a-f]{2}:|^fd[0-9a-f]{2}:/i.test(domain)) return false;
+  return true;
+}
+
 function createProxyServer() {
   const server = http.createServer((req, res) => {
     const CORS = {
@@ -60,6 +78,12 @@ function createProxyServer() {
     if (!domain || !auth) {
       res.writeHead(400, { ...CORS, 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Missing X-Canvas-Domain or Authorization header' }));
+      return;
+    }
+
+    if (!isValidCanvasDomain(domain)) {
+      res.writeHead(400, { ...CORS, 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Invalid Canvas domain' }));
       return;
     }
 
