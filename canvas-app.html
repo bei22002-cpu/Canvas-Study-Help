@@ -211,7 +211,7 @@ body{font-family:'Outfit',sans-serif;color:var(--text);background:var(--cream);m
     <div class="setup-card">
       <div class="setup-h">Connect to Canvas</div>
       <div class="setup-sub">Enter your credentials below. Check "Remember me" and you won't need to log in again on this device.</div>
-      <div class="notice">⚡ Keep the proxy running in Terminal:<br/><code>python3 canvas-proxy.py</code></div>
+      <div class="notice" id="launcherNotice" style="display:none">⚡ For best results, use the <strong>Canvas Study Help</strong> app — it starts everything automatically. <a href="https://github.com/bei22002-cpu/Canvas-Study-Help/releases" target="_blank">Download</a></div>
       <div class="saved-badge" id="savedBadge">
         <svg width="14" height="14" viewBox="0 0 16 16" fill="#059669"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm3.7 5.7l-4 4a.75.75 0 01-1.06 0l-2-2a.75.75 0 011.06-1.06l1.47 1.47 3.47-3.47a.75.75 0 011.06 1.06z"/></svg>
         Saved credentials found — connecting…
@@ -344,7 +344,7 @@ body{font-family:'Outfit',sans-serif;color:var(--text);background:var(--cream);m
       <h3>About</h3>
       <p>Canvas Study App — AI assistant with live Canvas data, web search, color-coded calendar, and calendar export (.ics works with Google Calendar, Apple Calendar, and Outlook).</p>
       <div class="settings-row">
-        <div><label>Proxy server</label><small>python3 canvas-proxy.py must be running</small></div>
+        <div><label>Proxy server</label><small id="proxyStatusLabel">Checking…</small></div>
         <div id="proxyStatus" style="font-size:12px;color:var(--muted2)">—</div>
       </div>
     </div>
@@ -397,6 +397,12 @@ window.addEventListener('load',()=>{
 });
 
 async function checkProxy(){
+  // Detect whether we're running via the launcher (served from localhost)
+  const viaLauncher = window.location.protocol === 'http:' && window.location.hostname === '127.0.0.1';
+  document.getElementById('launcherNotice').style.display = viaLauncher ? 'none' : 'block';
+  document.getElementById('proxyStatusLabel').textContent = viaLauncher
+    ? 'Managed by the Canvas Study Help app'
+    : 'Run python3 canvas-proxy.py if not using the app launcher';
   try{
     await fetch(PROXY+'/api/v1/users/self',{headers:{'Authorization':'Bearer x','X-Canvas-Domain':'x'}});
     document.getElementById('proxyStatus').textContent='✓ Running';
@@ -447,7 +453,7 @@ async function connect(silent=false){
     buildSettings(self);
   }catch(e){
     let msg=e.message;
-    if(msg.includes('fetch')||msg.includes('Failed'))msg='Cannot reach proxy. Make sure canvas-proxy.py is running in Terminal.';
+    if(msg.includes('fetch')||msg.includes('Failed'))msg='Cannot reach the proxy server. If you installed the Canvas Study Help app, try restarting it. Otherwise run: python3 canvas-proxy.py';
     showErr(msg);
     btn.disabled=false;btn.textContent='Connect to Canvas';
     document.getElementById('dot').className='status-dot off';

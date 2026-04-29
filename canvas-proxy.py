@@ -1,15 +1,22 @@
 #!/usr/bin/env python3
 """
 Canvas API Proxy — solves CORS when using Canvas AI Assistant
-Run with: python3 canvas-proxy.py
-Then open canvas-assistant.html in your browser.
+
+Run standalone:  python3 canvas-proxy.py
+The launcher (launcher.py) starts this automatically — no manual step needed.
+
+Environment variables:
+    CANVAS_PROXY_PORT   Listening port  (default: 3001)
+    CANVAS_PROXY_HOST   Listening host  (default: localhost)
 """
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.request import urlopen, Request
 from urllib.error import HTTPError, URLError
 import json
+import os
 
-PORT = 3001
+PORT = int(os.environ.get("CANVAS_PROXY_PORT", "3001"))
+HOST = os.environ.get("CANVAS_PROXY_HOST", "localhost")
 
 class ProxyHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -64,9 +71,9 @@ class ProxyHandler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps({"error": str(e.reason)}).encode())
 
 if __name__ == "__main__":
-    server = HTTPServer(("localhost", PORT), ProxyHandler)
-    print(f"\n  Canvas Proxy running on http://localhost:{PORT}")
-    print(f"  Open canvas-assistant.html in your browser\n")
+    server = HTTPServer((HOST, PORT), ProxyHandler)
+    print(f"\n  Canvas Proxy running on http://{HOST}:{PORT}")
+    print(f"  Open canvas-app.html in your browser (or use the launcher)\n")
     print(f"  Press Ctrl+C to stop\n")
     try:
         server.serve_forever()
