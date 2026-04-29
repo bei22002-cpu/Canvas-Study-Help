@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Canvas Study App</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--navy:#1a2744;--cream:#f7f5f0;--surface:#fff;--soft:#f0ede6;--border:#e2ddd6;--border2:#d0cac0;--text:#1a2744;--muted:#6b7280;--muted2:#9ca3af;--rust:#e53e3e;--gold:#d4a017;--green:#059669}
+body{font-family:'Outfit',sans-serif;color:var(--text);background:var(--cream);min-height:100vh;display:flex;flex-direction:column}
+/* HEADER */
+.app-header{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;height:54px;flex-shrink:0}
+.app-logo{display:flex;align-items:center;gap:10px;margin-right:2rem}
+.logo-mark{width:30px;height:30px;background:var(--gold);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'Lora',serif;font-weight:500;color:var(--navy);font-size:13px}
+.logo-text{color:#fff;font-size:15px;font-weight:500}
+.nav-tabs{display:flex;height:54px}
+.nav-tab{padding:0 1.1rem;color:rgba(255,255,255,0.5);font-size:13px;font-weight:500;cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;transition:all 0.15s;display:flex;align-items:center;gap:6px}
+.nav-tab:hover{color:rgba(255,255,255,0.85)}
+.nav-tab.active{color:#fff;border-bottom-color:var(--gold)}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.status-dot{width:8px;height:8px;border-radius:50%;background:#10b981}
+.status-dot.loading{background:var(--gold);animation:pulse 1s infinite}
+.status-dot.off{background:var(--muted2)}
+.user-chip{font-size:12px;color:rgba(255,255,255,0.6);background:rgba(255,255,255,0.08);padding:4px 10px;border-radius:100px;cursor:pointer;border:none;transition:all 0.15s}
+.user-chip:hover{background:rgba(255,255,255,0.15);color:#fff}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+/* PAGES */
+.page{display:none;flex:1;flex-direction:column;overflow:hidden}
+.page.active{display:flex}
+/* SETUP */
+.setup-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:2rem}
+.setup-card{background:var(--surface);border:0.5px solid var(--border);border-radius:16px;padding:2rem;width:100%;max-width:460px}
+.setup-h{font-family:'Lora',serif;font-size:21px;font-weight:400;color:var(--navy);margin-bottom:0.4rem}
+.setup-sub{font-size:13px;color:var(--muted);margin-bottom:1.25rem;line-height:1.6}
+.notice{background:#fffbeb;border:0.5px solid #f59e0b;border-radius:8px;padding:10px 12px;font-size:12px;color:#92400e;margin-bottom:1.25rem;line-height:1.6}
+.notice code{font-family:monospace;background:rgba(0,0,0,0.07);padding:1px 5px;border-radius:4px}
+.field{margin-bottom:0.9rem}
+.field label{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:5px;letter-spacing:0.05em;text-transform:uppercase}
+.field input{width:100%;padding:9px 11px;border:0.5px solid var(--border);border-radius:8px;font-family:'Outfit',sans-serif;font-size:14px;color:var(--text);background:var(--soft);outline:none;transition:border-color 0.15s}
+.field input:focus{border-color:var(--navy);background:#fff}
+.field .hint{font-size:11px;color:var(--muted);margin-top:3px}
+.field .hint a{color:var(--navy)}
+.remember-row{display:flex;align-items:center;gap:8px;margin-bottom:1rem;font-size:13px;color:var(--muted);cursor:pointer;user-select:none}
+.remember-row input[type=checkbox]{width:auto;accent-color:var(--navy);cursor:pointer}
+.connect-btn{width:100%;padding:11px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-family:'Outfit',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:opacity 0.15s}
+.connect-btn:hover{opacity:0.88}
+.connect-btn:disabled{opacity:0.5;cursor:not-allowed}
+.err-msg{font-size:12px;color:var(--rust);margin-top:8px;padding:8px 10px;background:#fef2f2;border-radius:6px;display:none}
+.saved-badge{display:none;align-items:center;gap:6px;font-size:12px;color:var(--green);background:#ecfdf5;border:0.5px solid #a7f3d0;border-radius:6px;padding:6px 10px;margin-bottom:1rem}
+/* MAIN LAYOUT */
+.main-layout{display:flex;flex:1;overflow:hidden;min-height:0}
+.sidebar{width:200px;background:var(--surface);border-right:0.5px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
+.sidebar-section{padding:0.9rem 1rem 0.4rem;font-size:10px;font-weight:600;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase}
+.course-item{padding:7px 1rem;font-size:13px;color:var(--navy);cursor:pointer;border-left:3px solid transparent;transition:background 0.1s;display:flex;align-items:center;gap:8px}
+.course-item:hover{background:var(--soft)}
+.course-item.active{background:var(--soft);font-weight:500}
+.course-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.cname{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px}
+.ccode{font-size:10px;color:var(--muted);margin-top:1px}
+.content-area{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+/* CHAT */
+.chat-banner{padding:0.65rem 1.25rem;background:var(--soft);border-bottom:0.5px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between}
+.bname{font-size:14px;font-weight:500;color:var(--navy)}
+.bcode{font-size:11px;color:var(--muted)}
+.tool-badges{display:flex;gap:6px}
+.badge{font-size:10px;padding:2px 8px;border-radius:100px;font-weight:500}
+.badge.canvas{background:#e8f0fe;color:#1a56db}
+.badge.web{background:#e8faf0;color:#0f766e}
+.messages{flex:1;overflow-y:auto;padding:1.25rem;display:flex;flex-direction:column;gap:0.75rem}
+.msg{max-width:88%;display:flex;flex-direction:column;gap:4px}
+.msg.user{align-self:flex-end;align-items:flex-end}
+.msg.ai{align-self:flex-start;align-items:flex-start}
+.bubble{padding:10px 14px;border-radius:12px;font-size:14px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+.msg.user .bubble{background:var(--navy);color:#fff;border-bottom-right-radius:3px}
+.msg.ai .bubble{background:var(--surface);border:0.5px solid var(--border);color:var(--text);border-bottom-left-radius:3px}
+.tool-pill{font-size:11px;padding:3px 10px;border-radius:100px;border:0.5px solid;display:inline-block;margin:1px 0}
+.tool-pill.canvas-tool{color:#1a56db;background:#e8f0fe;border-color:#c3d7fe}
+.tool-pill.web-tool{color:#0f766e;background:#e8faf0;border-color:#a7f3d0}
+.typing{display:flex;gap:4px;align-items:center;padding:12px 14px}
+.typing span{width:5px;height:5px;background:var(--muted);border-radius:50%;animation:bounce 1.2s infinite}
+.typing span:nth-child(2){animation-delay:0.2s}
+.typing span:nth-child(3){animation-delay:0.4s}
+@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-5px)}}
+.input-bar{padding:0.75rem 1rem;border-top:0.5px solid var(--border);display:flex;gap:8px;flex-shrink:0;background:var(--surface)}
+.input-bar textarea{flex:1;border:0.5px solid var(--border);border-radius:8px;padding:9px 12px;font-family:'Outfit',sans-serif;font-size:14px;color:var(--text);background:var(--soft);resize:none;outline:none;height:40px;max-height:120px;line-height:1.5;transition:border-color 0.15s}
+.input-bar textarea:focus{border-color:var(--navy);background:#fff}
+.send-btn{width:40px;height:40px;border-radius:8px;border:none;background:var(--navy);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:opacity 0.15s}
+.send-btn:hover{opacity:0.85}
+.send-btn:disabled{opacity:0.4;cursor:not-allowed}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:0.9rem;color:var(--muted);text-align:center;padding:2rem}
+.empty-icon{font-size:30px}
+.empty-state p{font-size:13px;max-width:280px;line-height:1.6}
+.chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.chip{padding:5px 12px;background:var(--surface);border:0.5px solid var(--border);border-radius:100px;font-size:12px;color:var(--navy);cursor:pointer;transition:background 0.1s}
+.chip:hover{background:var(--soft)}
+.info-bar{background:var(--navy);color:rgba(255,255,255,0.6);font-size:11px;padding:5px 1.25rem;flex-shrink:0}
+.info-bar span{color:#fff;font-weight:500}
+/* CALENDAR */
+.cal-page{display:flex;flex:1;overflow:hidden;min-height:0}
+.cal-sidebar{width:200px;background:var(--surface);border-right:0.5px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;padding:1rem}
+.cal-sidebar-title{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:0.75rem}
+.cal-course-row{display:flex;align-items:center;gap:7px;margin-bottom:0.5rem;font-size:12px;color:var(--navy);overflow:hidden}
+.cal-course-row input[type=checkbox]{accent-color:var(--navy);cursor:pointer;flex-shrink:0}
+.color-swatch{width:14px;height:14px;border-radius:50%;flex-shrink:0;position:relative;border:2px solid rgba(0,0,0,0.1);cursor:pointer}
+.color-swatch input[type=color]{position:absolute;opacity:0;inset:0;cursor:pointer;padding:0;border:none;width:100%;height:100%}
+.cal-course-label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;flex:1}
+.cal-export-section{margin-top:auto;padding-top:1rem;border-top:0.5px solid var(--border);display:flex;flex-direction:column;gap:7px}
+.export-btn{padding:8px 10px;border-radius:8px;border:0.5px solid var(--border);background:var(--soft);color:var(--navy);font-family:'Outfit',sans-serif;font-size:12px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background 0.15s;text-align:left;width:100%}
+.export-btn:hover{background:var(--border2)}
+.cal-main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.cal-header{padding:0.9rem 1.25rem;background:var(--surface);border-bottom:0.5px solid var(--border);display:flex;align-items:center;gap:1rem;flex-shrink:0}
+.cal-nav{display:flex;align-items:center;gap:8px}
+.cal-nav button{width:28px;height:28px;border-radius:6px;border:0.5px solid var(--border);background:var(--soft);color:var(--navy);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:background 0.1s}
+.cal-nav button:hover{background:var(--border)}
+.cal-month-label{font-size:15px;font-weight:600;color:var(--navy);min-width:155px;text-align:center}
+.cal-view-toggle{display:flex;border:0.5px solid var(--border);border-radius:8px;overflow:hidden;margin-left:auto}
+.cal-view-btn{padding:5px 12px;font-size:12px;font-weight:500;cursor:pointer;border:none;background:var(--soft);color:var(--muted);transition:all 0.1s}
+.cal-view-btn.active{background:var(--navy);color:#fff}
+.cal-today-btn{padding:5px 12px;border:0.5px solid var(--border);border-radius:6px;background:var(--soft);color:var(--navy);font-size:12px;font-weight:500;cursor:pointer;transition:background 0.1s}
+.cal-today-btn:hover{background:var(--border)}
+.cal-grid-wrap{flex:1;overflow-y:auto;padding:1rem 1.25rem}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:0;border:0.5px solid var(--border);border-radius:10px;overflow:hidden}
+.cal-day-hdr{background:var(--soft);padding:8px 4px;text-align:center;font-size:10px;font-weight:600;color:var(--muted);letter-spacing:0.05em;border-bottom:0.5px solid var(--border);border-right:0.5px solid var(--border)}
+.cal-day-hdr:last-child{border-right:none}
+.cal-day{min-height:90px;padding:5px;border-right:0.5px solid var(--border);border-bottom:0.5px solid var(--border);background:var(--surface)}
+.cal-day:nth-child(7n){border-right:none}
+.cal-day.other-month{background:var(--soft);opacity:0.65}
+.cal-day.today .day-num{background:var(--navy);color:#fff;border-radius:50%}
+.day-num{font-size:11px;font-weight:500;color:var(--navy);margin-bottom:3px;width:20px;height:20px;display:flex;align-items:center;justify-content:center}
+.day-event{font-size:10px;padding:2px 5px;border-radius:3px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff;cursor:pointer;line-height:1.4}
+.day-event:hover{opacity:0.82}
+.day-more{font-size:9px;color:var(--muted);padding:1px 3px;cursor:pointer}
+.day-more:hover{color:var(--navy)}
+/* LIST VIEW */
+.cal-list{display:flex;flex-direction:column}
+.list-date-hdr{padding:7px 0.9rem;background:var(--soft);font-size:11px;font-weight:600;color:var(--muted);letter-spacing:0.04em;position:sticky;top:0;border-bottom:0.5px solid var(--border)}
+.list-event-row{padding:9px 0.9rem;display:flex;align-items:center;gap:10px;border-bottom:0.5px solid var(--border);cursor:pointer;transition:background 0.1s}
+.list-event-row:hover{background:var(--soft)}
+.list-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.list-info{flex:1;min-width:0}
+.list-name{font-size:13px;color:var(--navy);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.list-course{font-size:11px;color:var(--muted);margin-top:1px}
+.list-time{font-size:11px;color:var(--muted);flex-shrink:0}
+.list-pts{font-size:11px;background:var(--soft);color:var(--navy);padding:2px 7px;border-radius:100px;flex-shrink:0;border:0.5px solid var(--border)}
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.28);z-index:100;display:none;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border-radius:14px;padding:1.5rem;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,0.15);margin:1rem;position:relative}
+.modal-title{font-size:16px;font-weight:600;color:var(--navy);margin-bottom:0.3rem;padding-right:2rem}
+.modal-course-line{font-size:12px;color:var(--muted);margin-bottom:1rem;display:flex;align-items:center;gap:6px}
+.modal-body{font-size:13px;color:var(--text);line-height:1.7;margin-bottom:1.25rem}
+.modal-body .row{margin-bottom:0.3rem}
+.modal-body strong{color:var(--navy)}
+.modal-actions{display:flex;gap:8px;flex-wrap:wrap}
+.modal-btn{padding:8px 14px;border-radius:8px;border:0.5px solid var(--border);background:var(--soft);color:var(--navy);font-family:'Outfit',sans-serif;font-size:12px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:5px;transition:background 0.1s;text-decoration:none}
+.modal-btn:hover{background:var(--border)}
+.modal-btn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+.modal-btn.primary:hover{opacity:0.88}
+.modal-close{position:absolute;top:1rem;right:1rem;width:26px;height:26px;border-radius:50%;border:none;background:var(--soft);color:var(--muted);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center}
+.modal-close:hover{background:var(--border)}
+/* SETTINGS */
+.settings-wrap{flex:1;overflow-y:auto;padding:2rem;display:flex;flex-direction:column;align-items:center}
+.settings-card{background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:1.5rem;width:100%;max-width:480px;margin-bottom:1rem}
+.settings-card h3{font-size:15px;font-weight:600;color:var(--navy);margin-bottom:0.2rem}
+.settings-card p{font-size:12px;color:var(--muted);margin-bottom:1rem;line-height:1.6}
+.settings-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:0.5px solid var(--border)}
+.settings-row:last-child{border-bottom:none}
+.settings-row label{font-size:13px;color:var(--navy)}
+.settings-row small{font-size:11px;color:var(--muted);display:block}
+.danger-btn{padding:7px 13px;border-radius:7px;border:0.5px solid var(--rust);color:var(--rust);background:transparent;font-family:'Outfit',sans-serif;font-size:12px;cursor:pointer;transition:background 0.15s}
+.danger-btn:hover{background:#fef2f2}
+.color-settings-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid var(--border)}
+.color-settings-row:last-child{border-bottom:none}
+.color-settings-row label{font-size:13px;color:var(--navy);display:flex;align-items:center;gap:8px}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <div class="app-logo">
+    <div class="logo-mark">Cv</div>
+    <span class="logo-text">Canvas Study</span>
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" data-page="setupPage" onclick="showPage('chatPage',this)" id="tabChat">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2h12a1 1 0 011 1v8a1 1 0 01-1 1H5l-3 3V3a1 1 0 011-1z"/></svg>
+      AI Assistant
+    </button>
+    <button class="nav-tab" data-page="calPage" onclick="showPage('calPage',this)">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M5 1v1H2a1 1 0 00-1 1v11a1 1 0 001 1h12a1 1 0 001-1V3a1 1 0 00-1-1h-3V1h-1v1H6V1H5zm-3 4h12v8H2V5z"/></svg>
+      Calendar
+    </button>
+    <button class="nav-tab" data-page="settingsPage" onclick="showPage('settingsPage',this)">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M7.5 1a6.5 6.5 0 100 13A6.5 6.5 0 007.5 1zm0 4a2.5 2.5 0 110 5 2.5 2.5 0 010-5z"/></svg>
+      Settings
+    </button>
+  </div>
+  <div class="header-right">
+    <div class="status-dot off" id="dot"></div>
+    <button class="user-chip" id="userChip" style="display:none" onclick="showPage('settingsPage',document.querySelectorAll('.nav-tab')[2])"></button>
+  </div>
+</div>
+
+<!-- SETUP -->
+<div class="page active" id="setupPage">
+  <div class="setup-wrap">
+    <div class="setup-card">
+      <div class="setup-h">Connect to Canvas</div>
+      <div class="setup-sub">Enter your credentials below. Check "Remember me" and you won't need to log in again on this device.</div>
+      <div class="notice">⚡ Keep the proxy running in Terminal:<br/><code>python3 canvas-proxy.py</code></div>
+      <div class="saved-badge" id="savedBadge">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="#059669"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm3.7 5.7l-4 4a.75.75 0 01-1.06 0l-2-2a.75.75 0 011.06-1.06l1.47 1.47 3.47-3.47a.75.75 0 011.06 1.06z"/></svg>
+        Saved credentials found — connecting…
+      </div>
+      <div class="field">
+        <label>Canvas Domain</label>
+        <input type="text" id="domain" placeholder="byui.instructure.com"/>
+        <div class="hint">Your school's Canvas URL without https://</div>
+      </div>
+      <div class="field">
+        <label>Canvas Access Token</label>
+        <input type="password" id="token" placeholder="Paste your Canvas API token"/>
+        <div class="hint">Account → Settings → New Access Token</div>
+      </div>
+      <div class="field">
+        <label>Anthropic API Key</label>
+        <input type="password" id="anthropicKey" placeholder="sk-ant-…"/>
+        <div class="hint">Get one at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a></div>
+      </div>
+      <label class="remember-row">
+        <input type="checkbox" id="rememberMe" checked/>
+        Remember my credentials on this device
+      </label>
+      <button class="connect-btn" id="connectBtn" onclick="connect()">Connect to Canvas</button>
+      <div class="err-msg" id="errMsg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- CHAT -->
+<div class="page" id="chatPage">
+  <div class="main-layout">
+    <div class="sidebar">
+      <div class="sidebar-section">Courses</div>
+      <div id="courseList"></div>
+    </div>
+    <div class="content-area">
+      <div class="chat-banner">
+        <div><div class="bname" id="bannerName">All Courses</div><div class="bcode" id="bannerCode">Ask anything about your courses</div></div>
+        <div class="tool-badges"><div class="badge canvas">Canvas Live</div><div class="badge web">Web</div></div>
+      </div>
+      <div class="messages" id="messages">
+        <div class="empty-state" id="emptyState">
+          <div class="empty-icon">🎓</div>
+          <p>Claude has live access to your Canvas account and the web. Ask about assignments, grades, submissions, or any course topic.</p>
+          <div class="chips">
+            <div class="chip" onclick="quickAsk('What assignments have I already submitted?')">Submitted work</div>
+            <div class="chip" onclick="quickAsk('What are my current grades?')">My grades</div>
+            <div class="chip" onclick="quickAsk('What is due in the next 7 days?')">Due this week</div>
+            <div class="chip" onclick="quickAsk('Any missing assignments?')">Missing work</div>
+          </div>
+        </div>
+      </div>
+      <div class="input-bar">
+        <textarea id="chatInput" placeholder="Ask anything about your courses…" onkeydown="handleKey(event)"></textarea>
+        <button class="send-btn" id="sendBtn" onclick="send()">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M2 8L14 2L8 14L7 9L2 8Z" fill="white" stroke="white" stroke-width="1" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+      <div class="info-bar" id="infoBar" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<!-- CALENDAR -->
+<div class="page" id="calPage">
+  <div class="cal-page">
+    <div class="cal-sidebar">
+      <div class="cal-sidebar-title">Courses</div>
+      <div id="calCourseFilters"></div>
+      <div class="cal-export-section">
+        <div class="cal-sidebar-title" style="margin-bottom:0.5rem">Export Calendar</div>
+        <button class="export-btn" onclick="exportICS('all')">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v9m-3-3l3 3 3-3M2 13h12"/></svg>
+          Download .ics — All
+        </button>
+        <button class="export-btn" onclick="exportICS('visible')">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v9m-3-3l3 3 3-3M2 13h12"/></svg>
+          Download .ics — Selected
+        </button>
+        <button class="export-btn" onclick="openGCalBulk()">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="#4285f4" stroke-width="1.5"><rect x="1" y="2" width="14" height="13" rx="1"/><path d="M5 1v2m6-2v2M1 6h14"/></svg>
+          Open in Google Cal
+        </button>
+        <button class="export-btn" onclick="exportICS('apple')">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M11.182 2c.11.546-.07 1.1-.41 1.56-.34.45-.9.8-1.47.76-.1-.55.1-1.08.44-1.53.35-.46.93-.8 1.44-.79zm2.27 5.44c-.99.3-1.66 1.15-1.61 2.2.05.95.62 1.8 1.5 2.18-.2.6-.48 1.15-.82 1.62-.5.7-1.01 1.4-1.8 1.41-.77.01-1.01-.45-1.89-.45-.88 0-1.15.44-1.88.46-.77.02-1.35-.7-1.86-1.4C4.37 11.9 3.6 10 3.6 8.18c0-1.98.9-3.02 2.08-3.07.76-.03 1.48.5 1.94.5.47 0 1.35-.62 2.27-.53.39.02 1.48.16 2.18 1.2l-.65.16z"/></svg>
+          Apple Calendar (.ics)
+        </button>
+      </div>
+    </div>
+    <div class="cal-main">
+      <div class="cal-header">
+        <div class="cal-nav">
+          <button onclick="changeMonth(-1)">&#8592;</button>
+          <div class="cal-month-label" id="calMonthLabel"></div>
+          <button onclick="changeMonth(1)">&#8594;</button>
+        </div>
+        <button class="cal-today-btn" onclick="goToday()">Today</button>
+        <div class="cal-view-toggle">
+          <button class="cal-view-btn active" id="viewMonth" onclick="setView('month')">Month</button>
+          <button class="cal-view-btn" id="viewList" onclick="setView('list')">List</button>
+        </div>
+      </div>
+      <div class="cal-grid-wrap" id="calGridWrap">
+        <div style="padding:2rem;text-align:center;color:var(--muted);font-size:13px">Connect to Canvas to load your assignments.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div class="page" id="settingsPage">
+  <div class="settings-wrap">
+    <div class="settings-card">
+      <h3>Account</h3>
+      <p>Connected account and credential management.</p>
+      <div class="settings-row"><div><label id="settingsUser">Not connected</label><small>Student name</small></div></div>
+      <div class="settings-row"><div><label id="settingsDomain">—</label><small>Canvas domain</small></div></div>
+      <div class="settings-row">
+        <div><label>Saved credentials</label><small>Stored in browser localStorage on this device only</small></div>
+        <button class="danger-btn" onclick="clearSaved()">Clear &amp; log out</button>
+      </div>
+    </div>
+    <div class="settings-card">
+      <h3>Course Colors</h3>
+      <p>Click any color dot to customize — changes apply to the calendar immediately.</p>
+      <div id="colorSettings"><div style="font-size:13px;color:var(--muted)">Connect to Canvas to see courses.</div></div>
+    </div>
+    <div class="settings-card">
+      <h3>About</h3>
+      <p>Canvas Study App — AI assistant with live Canvas data, web search, color-coded calendar, and calendar export (.ics works with Google Calendar, Apple Calendar, and Outlook).</p>
+      <div class="settings-row">
+        <div><label>Proxy server</label><small>python3 canvas-proxy.py must be running</small></div>
+        <div id="proxyStatus" style="font-size:12px;color:var(--muted2)">—</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="maybeCloseModal(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <div class="modal-title" id="modalTitle"></div>
+    <div class="modal-course-line" id="modalCourse"></div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-actions" id="modalActions"></div>
+  </div>
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────────────────
+const PROXY='http://localhost:3001';
+const STORE_KEY='canvasStudyApp_v2';
+const COLORS=['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316','#84cc16','#ec4899','#14b8a6','#6366f1','#a855f7','#e11d48','#0891b2','#65a30d'];
+
+let canvasDomain='',canvasToken='',anthropicKey='';
+let courses=[],allAssignments=[],courseData={};
+let activeCourse=null,chatHistory=[],isLoading=false;
+let calYear=new Date().getFullYear(),calMonth=new Date().getMonth(),calView='month';
+let visibleCourseIds=new Set(),courseColors={},currentEvent=null;
+
+// ── STORAGE ────────────────────────────────────────────────────────────────
+function saveCredentials(){
+  if(!document.getElementById('rememberMe')?.checked)return;
+  try{localStorage.setItem(STORE_KEY,JSON.stringify({domain:canvasDomain,token:canvasToken,anthropicKey,courseColors}));}catch(e){}
+}
+function loadCredentials(){try{const r=localStorage.getItem(STORE_KEY);return r?JSON.parse(r):null;}catch(e){return null;}}
+function clearSaved(){localStorage.removeItem(STORE_KEY);location.reload();}
+
+// ── INIT ───────────────────────────────────────────────────────────────────
+window.addEventListener('load',()=>{
+  const saved=loadCredentials();
+  if(saved?.domain&&saved?.token&&saved?.anthropicKey){
+    document.getElementById('savedBadge').style.display='flex';
+    document.getElementById('domain').value=saved.domain;
+    document.getElementById('token').value=saved.token;
+    document.getElementById('anthropicKey').value=saved.anthropicKey;
+    if(saved.courseColors)courseColors=saved.courseColors;
+    setTimeout(()=>connect(true),600);
+  }
+  checkProxy();
+});
+
+async function checkProxy(){
+  try{
+    await fetch(PROXY+'/api/v1/users/self',{headers:{'Authorization':'Bearer x','X-Canvas-Domain':'x'}});
+    document.getElementById('proxyStatus').textContent='✓ Running';
+    document.getElementById('proxyStatus').style.color='var(--green)';
+  }catch(e){
+    document.getElementById('proxyStatus').textContent='Not running';
+    document.getElementById('proxyStatus').style.color='var(--rust)';
+  }
+}
+
+// ── NAV ────────────────────────────────────────────────────────────────────
+function showPage(pageId,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(pageId).classList.add('active');
+  if(btn)btn.classList.add('active');
+}
+
+// ── CANVAS API ─────────────────────────────────────────────────────────────
+async function proxyGet(path){
+  const r=await fetch(PROXY+path,{headers:{'Authorization':`Bearer ${canvasToken}`,'X-Canvas-Domain':canvasDomain}});
+  if(!r.ok)throw new Error(`Canvas ${r.status}`);
+  return r.json();
+}
+
+async function connect(silent=false){
+  const domain=document.getElementById('domain').value.trim().replace(/^https?:\/\//,'');
+  const token=document.getElementById('token').value.trim();
+  const aKey=document.getElementById('anthropicKey').value.trim();
+  document.getElementById('errMsg').style.display='none';
+  if(!domain||!token||!aKey){if(!silent)showErr('Please fill in all three fields.');return;}
+  canvasDomain=domain;canvasToken=token;anthropicKey=aKey;
+  const btn=document.getElementById('connectBtn');
+  btn.disabled=true;btn.textContent='Connecting…';
+  document.getElementById('dot').className='status-dot loading';
+  try{
+    const[fetchedCourses,self]=await Promise.all([
+      proxyGet('/api/v1/courses?enrollment_state=active&per_page=30&include[]=total_scores'),
+      proxyGet('/api/v1/users/self')
+    ]);
+    courses=fetchedCourses.filter(c=>c.name&&!c.access_restricted_by_date);
+    courses.forEach((c,i)=>{if(!courseColors[c.id])courseColors[c.id]=COLORS[i%COLORS.length];});
+    visibleCourseIds=new Set(courses.map(c=>c.id));
+    await loadAllAssignments();
+    saveCredentials();
+    buildUI(self);
+    buildCalendar();
+    buildSettings(self);
+  }catch(e){
+    let msg=e.message;
+    if(msg.includes('fetch')||msg.includes('Failed'))msg='Cannot reach proxy. Make sure canvas-proxy.py is running in Terminal.';
+    showErr(msg);
+    btn.disabled=false;btn.textContent='Connect to Canvas';
+    document.getElementById('dot').className='status-dot off';
+    document.getElementById('savedBadge').style.display='none';
+  }
+}
+
+async function loadAllAssignments(){
+  allAssignments=[];
+  await Promise.all(courses.slice(0,20).map(async c=>{
+    try{
+      const data=await proxyGet(`/api/v1/courses/${c.id}/assignments?per_page=100&order_by=due_at&include[]=submission`);
+      (Array.isArray(data)?data:[]).forEach(a=>{
+        allAssignments.push({...a,course_name:c.name,course_code:c.course_code||'',course_id:c.id,color:courseColors[c.id]||'#3b82f6'});
+      });
+      courseData[c.id]={assignments:Array.isArray(data)?data:[]};
+    }catch(e){courseData[c.id]={assignments:[]};}
+  }));
+}
+
+function buildUI(self){
+  document.getElementById('setupPage').classList.remove('active');
+  document.getElementById('chatPage').classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.nav-tab')[0].classList.add('active');
+  document.getElementById('dot').className='status-dot';
+  const chip=document.getElementById('userChip');
+  chip.style.display='block';chip.textContent=self.name.split(' ')[0];
+  document.getElementById('infoBar').style.display='block';
+  document.getElementById('infoBar').innerHTML=`Connected as <span>${self.name}</span> · <span>${courses.length}</span> courses · <span>${allAssignments.filter(a=>a.due_at).length}</span> assignments with due dates`;
+  buildCourseSidebar();
+}
+
+function buildCourseSidebar(){
+  const list=document.getElementById('courseList');
+  list.innerHTML='';
+  const allEl=document.createElement('div');
+  allEl.className='course-item active';
+  allEl.innerHTML=`<div class="course-dot" style="background:var(--navy)"></div><div><div class="cname">All Courses</div></div>`;
+  allEl.onclick=()=>selectCourse(null,allEl);
+  list.appendChild(allEl);
+  courses.forEach(c=>{
+    const el=document.createElement('div');
+    el.className='course-item';
+    el.setAttribute('data-course-id',c.id);
+    el.innerHTML=`<div class="course-dot" style="background:${courseColors[c.id]}"></div><div><div class="cname">${c.name}</div><div class="ccode">${c.course_code||''}</div></div>`;
+    el.onclick=()=>selectCourse(c,el);
+    list.appendChild(el);
+  });
+}
+
+function selectCourse(course,el){
+  activeCourse=course;
+  document.querySelectorAll('#courseList .course-item').forEach(e=>e.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('bannerName').textContent=course?course.name:'All Courses';
+  document.getElementById('bannerCode').textContent=course?(course.course_code||''):'Ask anything about your enrolled courses';
+}
+
+// ── CALENDAR ───────────────────────────────────────────────────────────────
+function buildCalendar(){buildCalFilters();renderCal();}
+
+function buildCalFilters(){
+  const el=document.getElementById('calCourseFilters');
+  el.innerHTML='';
+  courses.forEach(c=>{
+    const row=document.createElement('div');
+    row.className='cal-course-row';
+    row.innerHTML=`
+      <input type="checkbox" id="cf-${c.id}" checked onchange="toggleCourse(${c.id},this.checked)"/>
+      <div class="color-swatch" style="background:${courseColors[c.id]}" title="Click to change color">
+        <input type="color" value="${courseColors[c.id]}" onchange="changeCourseColor(${c.id},this.value)"/>
+      </div>
+      <label class="cal-course-label" for="cf-${c.id}" title="${c.name}">${c.course_code||c.name}</label>`;
+    el.appendChild(row);
+  });
+}
+
+function toggleCourse(id,checked){
+  if(checked)visibleCourseIds.add(id);else visibleCourseIds.delete(id);
+  renderCal();
+}
+
+function changeCourseColor(id,color){
+  courseColors[id]=color;
+  // Update all assignment colors
+  allAssignments.forEach(a=>{if(a.course_id===id)a.color=color;});
+  saveCredentials();
+  buildCalFilters();
+  buildSettings();
+  renderCal();
+  // Update sidebar dots
+  document.querySelectorAll(`#courseList .course-item[data-course-id="${id}"] .course-dot`).forEach(d=>d.style.background=color);
+  document.querySelectorAll(`#colorSettings .color-swatch-inline[data-id="${id}"]`).forEach(d=>d.style.background=color);
+}
+
+function changeMonth(d){calMonth+=d;if(calMonth>11){calMonth=0;calYear++;}if(calMonth<0){calMonth=11;calYear--;}renderCal();}
+function goToday(){calYear=new Date().getFullYear();calMonth=new Date().getMonth();renderCal();}
+function setView(v){calView=v;document.getElementById('viewMonth').classList.toggle('active',v==='month');document.getElementById('viewList').classList.toggle('active',v==='list');renderCal();}
+function getVisibleEvents(){return allAssignments.filter(a=>a.due_at&&visibleCourseIds.has(a.course_id));}
+
+function renderCal(){
+  document.getElementById('calMonthLabel').textContent=new Date(calYear,calMonth,1).toLocaleString('default',{month:'long',year:'numeric'});
+  calView==='month'?renderMonthGrid():renderListView();
+}
+
+function renderMonthGrid(){
+  const wrap=document.getElementById('calGridWrap');
+  const today=new Date();today.setHours(0,0,0,0);
+  const firstDay=new Date(calYear,calMonth,1);
+  const lastDay=new Date(calYear,calMonth+1,0);
+  const startOffset=firstDay.getDay();
+  const events=getVisibleEvents();
+  const byDate={};
+  events.forEach(a=>{
+    const d=new Date(a.due_at);
+    const key=`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    if(!byDate[key])byDate[key]=[];
+    byDate[key].push(a);
+  });
+  const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  let html=`<div class="cal-grid">`;
+  days.forEach(d=>{html+=`<div class="cal-day-hdr">${d}</div>`;});
+  for(let i=0;i<startOffset;i++){
+    const d=new Date(calYear,calMonth,-(startOffset-i-1));
+    html+=`<div class="cal-day other-month"><div class="day-num">${d.getDate()}</div></div>`;
+  }
+  for(let d=1;d<=lastDay.getDate();d++){
+    const date=new Date(calYear,calMonth,d);
+    const key=`${calYear}-${calMonth}-${d}`;
+    const dayEvts=byDate[key]||[];
+    const isToday=date.getTime()===today.getTime();
+    const maxShow=3;
+    html+=`<div class="cal-day${isToday?' today':''}">`;
+    html+=`<div class="day-num">${d}</div>`;
+    dayEvts.slice(0,maxShow).forEach(a=>{
+      html+=`<div class="day-event" style="background:${a.color}" onclick="openEventModal(${a.id})" title="${a.name}">${a.name}</div>`;
+    });
+    if(dayEvts.length>maxShow)html+=`<div class="day-more">+${dayEvts.length-maxShow} more</div>`;
+    html+=`</div>`;
+  }
+  const totalCells=Math.ceil((startOffset+lastDay.getDate())/7)*7;
+  const remaining=totalCells-(startOffset+lastDay.getDate());
+  for(let i=1;i<=remaining;i++)html+=`<div class="cal-day other-month"><div class="day-num">${i}</div></div>`;
+  html+=`</div>`;
+  wrap.innerHTML=html;
+}
+
+function renderListView(){
+  const wrap=document.getElementById('calGridWrap');
+  const events=getVisibleEvents().sort((a,b)=>new Date(a.due_at)-new Date(b.due_at));
+  if(!events.length){wrap.innerHTML='<div style="padding:2rem;text-align:center;color:var(--muted);font-size:13px">No assignments to show for selected courses.</div>';return;}
+  const groups={};
+  events.forEach(a=>{
+    const key=new Date(a.due_at).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+    if(!groups[key])groups[key]=[];
+    groups[key].push(a);
+  });
+  let html='<div class="cal-list">';
+  Object.entries(groups).forEach(([date,evts])=>{
+    html+=`<div class="list-date-hdr">${date}</div>`;
+    evts.forEach(a=>{
+      const time=new Date(a.due_at).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+      const pts=a.points_possible?`${a.points_possible} pts`:'';
+      html+=`<div class="list-event-row" onclick="openEventModal(${a.id})">
+        <div class="list-dot" style="background:${a.color}"></div>
+        <div class="list-info"><div class="list-name">${a.name}</div><div class="list-course">${a.course_name}</div></div>
+        <div class="list-time">${time}</div>
+        ${pts?`<div class="list-pts">${pts}</div>`:''}
+      </div>`;
+    });
+  });
+  html+='</div>';
+  wrap.innerHTML=html;
+}
+
+function openEventModal(id){
+  const a=allAssignments.find(x=>x.id===id);
+  if(!a)return;
+  currentEvent=a;
+  const due=new Date(a.due_at);
+  const dueFmt=due.toLocaleString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
+  document.getElementById('modalTitle').textContent=a.name;
+  document.getElementById('modalCourse').innerHTML=`<div class="course-dot" style="background:${a.color};width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:4px"></div>${a.course_name}`;
+  let bodyHTML=`<div class="row"><strong>Due:</strong> ${dueFmt}</div>`;
+  bodyHTML+=`<div class="row"><strong>Points:</strong> ${a.points_possible||'N/A'}</div>`;
+  if(a.submission?.submitted_at)bodyHTML+=`<div class="row"><strong>Submitted:</strong> ${new Date(a.submission.submitted_at).toLocaleString()}</div>`;
+  if(a.submission?.score!=null)bodyHTML+=`<div class="row"><strong>Score:</strong> ${a.submission.score} / ${a.points_possible}</div>`;
+  if(a.submission?.missing)bodyHTML+=`<div class="row" style="color:var(--rust)">⚠ Missing</div>`;
+  if(a.submission?.late)bodyHTML+=`<div class="row" style="color:#f59e0b">⏰ Submitted late</div>`;
+  if(a.description){const desc=a.description.replace(/<[^>]*>/g,'').trim().slice(0,200);if(desc)bodyHTML+=`<div class="row" style="margin-top:8px;font-size:12px;color:var(--muted)">${desc}…</div>`;}
+  document.getElementById('modalBody').innerHTML=bodyHTML;
+  const gcalUrl=buildGCalURL(a);
+  document.getElementById('modalActions').innerHTML=`
+    <a class="modal-btn primary" href="${gcalUrl}" target="_blank">Open in Google Calendar</a>
+    <button class="modal-btn" onclick="downloadSingleICS()">Download .ics</button>
+    <button class="modal-btn" onclick="closeModal()">Close</button>`;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function maybeCloseModal(e){if(e.target===document.getElementById('modalOverlay'))closeModal();}
+function closeModal(){document.getElementById('modalOverlay').classList.remove('open');}
+function downloadSingleICS(){if(currentEvent)downloadBlob(buildSingleICS(currentEvent),'text/calendar',`${currentEvent.name.replace(/[^a-z0-9]/gi,'_')}.ics`);}
+
+// ── ICS GENERATION ─────────────────────────────────────────────────────────
+function fmtICS(dateStr){return new Date(dateStr).toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'');}
+function escICS(s){return(s||'').replace(/\n/g,'\\n').replace(/,/g,'\\,').replace(/;/g,'\\;');}
+
+function buildSingleICS(a){
+  const start=fmtICS(a.due_at);
+  const end=fmtICS(new Date(new Date(a.due_at).getTime()+3600000).toISOString());
+  return['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Canvas Study App//EN','CALSCALE:GREGORIAN',
+    'BEGIN:VEVENT',`DTSTART:${start}`,`DTEND:${end}`,
+    `SUMMARY:${escICS(a.name)}`,
+    `DESCRIPTION:Course: ${escICS(a.course_name)}\\nPoints: ${a.points_possible||'N/A'}`,
+    `CATEGORIES:${escICS(a.course_name)}`,`UID:canvas-${a.id}@canvasstudy`,
+    'END:VEVENT','END:VCALENDAR'].join('\r\n');
+}
+
+function exportICS(mode){
+  const evts=mode==='visible'
+    ?allAssignments.filter(a=>a.due_at&&visibleCourseIds.has(a.course_id))
+    :allAssignments.filter(a=>a.due_at);
+  if(!evts.length){alert('No assignments with due dates found.');return;}
+  const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Canvas Study App//EN','CALSCALE:GREGORIAN','X-WR-CALNAME:Canvas Assignments'];
+  evts.forEach(a=>{
+    const start=fmtICS(a.due_at);
+    const end=fmtICS(new Date(new Date(a.due_at).getTime()+3600000).toISOString());
+    lines.push('BEGIN:VEVENT',`DTSTART:${start}`,`DTEND:${end}`,
+      `SUMMARY:${escICS(a.name)} [${escICS(a.course_code||a.course_name)}]`,
+      `DESCRIPTION:Course: ${escICS(a.course_name)}\\nPoints: ${a.points_possible||'N/A'}`,
+      `CATEGORIES:${escICS(a.course_name)}`,`UID:canvas-${a.id}@canvasstudy`,'END:VEVENT');
+  });
+  lines.push('END:VCALENDAR');
+  downloadBlob(lines.join('\r\n'),'text/calendar','canvas-assignments.ics');
+}
+
+function buildGCalURL(a){
+  const start=fmtICS(a.due_at);
+  const end=fmtICS(new Date(new Date(a.due_at).getTime()+3600000).toISOString());
+  const p=new URLSearchParams({action:'TEMPLATE',text:`${a.name} [${a.course_code||a.course_name}]`,dates:`${start}/${end}`,details:`Course: ${a.course_name}\nPoints: ${a.points_possible||'N/A'}`});
+  return`https://calendar.google.com/calendar/render?${p}`;
+}
+
+function openGCalBulk(){
+  const evts=getVisibleEvents().filter(a=>a.due_at).slice(0,3);
+  if(!evts.length){alert('No assignments with due dates visible.');return;}
+  alert(`Opening first ${evts.length} assignments in Google Calendar. Allow popups if prompted.`);
+  evts.forEach((a,i)=>setTimeout(()=>window.open(buildGCalURL(a),'_blank'),i*600));
+}
+
+function downloadBlob(content,type,filename){
+  const blob=new Blob([content],{type});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=filename;a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+// ── SETTINGS ───────────────────────────────────────────────────────────────
+function buildSettings(self){
+  if(self){document.getElementById('settingsUser').textContent=self.name;document.getElementById('settingsDomain').textContent=canvasDomain;}
+  const el=document.getElementById('colorSettings');
+  el.innerHTML='';
+  courses.forEach(c=>{
+    const row=document.createElement('div');
+    row.className='color-settings-row';
+    row.innerHTML=`<label><div class="color-swatch color-swatch-inline" data-id="${c.id}" style="background:${courseColors[c.id]};width:18px;height:18px;display:inline-block;border-radius:50%;border:2px solid rgba(0,0,0,0.1);position:relative;cursor:pointer">
+      <input type="color" value="${courseColors[c.id]}" onchange="changeCourseColor(${c.id},this.value)" style="position:absolute;opacity:0;inset:0;cursor:pointer;width:100%;height:100%;border:none;padding:0"/></div>
+      ${c.name}</label><small style="font-size:11px;color:var(--muted)">${c.course_code||''}</small>`;
+    el.appendChild(row);
+  });
+}
+
+// ── CANVAS TOOLS ───────────────────────────────────────────────────────────
+async function tool_getCourses(){const d=await proxyGet('/api/v1/courses?enrollment_state=active&per_page=30&include[]=total_scores');return d.filter(c=>c.name).map(c=>({id:c.id,name:c.name,code:c.course_code,grade:c.enrollments?.[0]?.computed_current_score??null,letter:c.enrollments?.[0]?.computed_current_grade??null}));}
+async function tool_getAssignments({course_id,include_past,include_upcoming}){const rel=course_id?courses.filter(c=>String(c.id)===String(course_id)):courses.slice(0,15);const results=[];await Promise.all(rel.map(async c=>{let url=`/api/v1/courses/${c.id}/assignments?per_page=50&order_by=due_at`;if(include_upcoming===false)url+='&bucket=past';else if(include_past===false)url+='&bucket=upcoming';const data=await proxyGet(url).catch(()=>[]);data.forEach(a=>results.push({course:c.name,course_id:c.id,id:a.id,name:a.name,due_at:a.due_at,points:a.points_possible,submitted:a.has_submitted_submissions}));}));return results;}
+async function tool_getGrades({course_id}){const rel=course_id?courses.filter(c=>String(c.id)===String(course_id)):courses.slice(0,15);const results=[];await Promise.all(rel.map(async c=>{const data=await proxyGet(`/api/v1/courses/${c.id}/assignments?per_page=50&include[]=submission`).catch(()=>[]);data.forEach(a=>{if(a.submission)results.push({course:c.name,assignment:a.name,score:a.submission.score,possible:a.points_possible,grade:a.submission.grade,submitted_at:a.submission.submitted_at,late:a.submission.late,missing:a.submission.missing});});}));return results;}
+async function tool_getSubmissions({course_id}){const cid=course_id||(activeCourse?activeCourse.id:courses[0]?.id);return proxyGet(`/api/v1/courses/${cid}/students/submissions?student_ids[]=self&per_page=50&include[]=assignment`).catch(()=>[]);}
+async function tool_getAnnouncements({course_id}){const codes=course_id?[`course_${course_id}`]:courses.slice(0,15).map(c=>`course_${c.id}`);return proxyGet(`/api/v1/announcements?${codes.map(c=>`context_codes[]=${c}`).join('&')}&per_page=20&active_only=true`).catch(()=>[]);}
+async function tool_getModules({course_id}){const cid=course_id||(activeCourse?activeCourse.id:courses[0]?.id);return proxyGet(`/api/v1/courses/${cid}/modules?per_page=20&include[]=items`).catch(()=>[]);}
+async function tool_getSyllabus({course_id}){const cid=course_id||(activeCourse?activeCourse.id:courses[0]?.id);const data=await proxyGet(`/api/v1/courses/${cid}?include[]=syllabus_body`).catch(()=>null);if(!data?.syllabus_body)return'No syllabus found.';return data.syllabus_body.replace(/<[^>]*>/g,'').slice(0,3000);}
+
+const TOOL_MAP={get_courses:tool_getCourses,get_assignments:tool_getAssignments,get_grades:tool_getGrades,get_submissions:tool_getSubmissions,get_announcements:tool_getAnnouncements,get_modules:tool_getModules,get_syllabus:tool_getSyllabus};
+const TOOLS=[
+  {type:'web_search_20250305',name:'web_search'},
+  {name:'get_courses',description:'List active courses with grades.',input_schema:{type:'object',properties:{},required:[]}},
+  {name:'get_assignments',description:'Get assignments. include_past/include_upcoming booleans to filter.',input_schema:{type:'object',properties:{course_id:{type:'number'},include_past:{type:'boolean'},include_upcoming:{type:'boolean'}},required:[]}},
+  {name:'get_grades',description:'Get grades and submission status.',input_schema:{type:'object',properties:{course_id:{type:'number'}},required:[]}},
+  {name:'get_submissions',description:'Get submission data for a course.',input_schema:{type:'object',properties:{course_id:{type:'number'}},required:[]}},
+  {name:'get_announcements',description:'Get recent announcements.',input_schema:{type:'object',properties:{course_id:{type:'number'}},required:[]}},
+  {name:'get_modules',description:'Get course modules and items.',input_schema:{type:'object',properties:{course_id:{type:'number'}},required:[]}},
+  {name:'get_syllabus',description:'Get course syllabus.',input_schema:{type:'object',properties:{course_id:{type:'number'}},required:[]}}
+];
+
+async function runAgent(userMessage){
+  const courseList=courses.map(c=>`- ${c.name} (ID:${c.id}, code:${c.course_code||'N/A'})`).join('\n');
+  const focus=activeCourse?`Focused on: ${activeCourse.name} (ID:${activeCourse.id})`:'All courses.';
+  const system=`You are a Canvas LMS academic assistant with live access to the student's Canvas account and the web.\n\nCourses:\n${courseList}\n${focus}\n\nUse Canvas tools to fetch real data before answering. Use web_search for external info, research, or course topics. Be specific and honest about grades and deadlines.`;
+  const msgs=document.getElementById('messages');
+  let messages=[...chatHistory,{role:'user',content:userMessage}];
+  while(true){
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':anthropicKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:2048,system,tools:TOOLS,messages})});
+    if(!res.ok){const e=await res.json().catch(()=>({error:{message:res.statusText}}));throw new Error(e.error?.message||res.statusText);}
+    const data=await res.json();
+    messages.push({role:'assistant',content:data.content});
+    if(data.stop_reason==='end_turn')return data.content.filter(b=>b.type==='text').map(b=>b.text).join('\n');
+    if(data.stop_reason==='tool_use'){
+      document.querySelectorAll('.msg.ai').forEach(el=>{if(el.querySelector('.typing'))el.remove();});
+      const toolBlocks=data.content.filter(b=>b.type==='tool_use');
+      const toolResults=[];
+      for(const tb of toolBlocks){
+        const isWeb=tb.name==='web_search';
+        const pill=document.createElement('div');
+        pill.className=`tool-pill ${isWeb?'web-tool':'canvas-tool'}`;
+        pill.textContent=isWeb?`Searching: "${tb.input?.query||''}"…`:`Canvas: ${tb.name.replace('get_','').replace(/_/g,' ')}…`;
+        msgs.appendChild(pill);msgs.scrollTop=msgs.scrollHeight;
+        let result;
+        if(TOOL_MAP[tb.name]){try{result=JSON.stringify(await TOOL_MAP[tb.name](tb.input||{}));}catch(e){result=JSON.stringify({error:e.message});}}
+        else result=JSON.stringify({error:`Unknown tool: ${tb.name}`});
+        pill.textContent=pill.textContent.replace('…','');
+        toolResults.push({type:'tool_result',tool_use_id:tb.id,content:result});
+      }
+      messages.push({role:'user',content:toolResults});
+      addTyping();
+      continue;
+    }
+    return data.content.filter(b=>b.type==='text').map(b=>b.text).join('\n')||'Done.';
+  }
+}
+
+async function send(){
+  const ta=document.getElementById('chatInput');
+  const text=ta.value.trim();
+  if(!text||isLoading)return;
+  ta.value='';ta.style.height='40px';
+  document.getElementById('emptyState')?.remove();
+  addMessage('user',text);
+  chatHistory.push({role:'user',content:text});
+  isLoading=true;document.getElementById('sendBtn').disabled=true;addTyping();
+  try{
+    const reply=await runAgent(text);
+    document.querySelectorAll('.msg.ai').forEach(el=>{if(el.querySelector('.typing'))el.remove();});
+    addMessage('ai',reply);
+    chatHistory.push({role:'assistant',content:reply});
+    if(chatHistory.length>20)chatHistory=chatHistory.slice(-20);
+  }catch(e){
+    document.querySelectorAll('.msg.ai').forEach(el=>{if(el.querySelector('.typing'))el.remove();});
+    addMessage('ai','Error: '+e.message);
+  }
+  isLoading=false;document.getElementById('sendBtn').disabled=false;
+}
+
+function addMessage(role,text){const msgs=document.getElementById('messages');const div=document.createElement('div');div.className=`msg ${role}`;const bubble=document.createElement('div');bubble.className='bubble';bubble.textContent=text;div.appendChild(bubble);msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;}
+function addTyping(){const msgs=document.getElementById('messages');const div=document.createElement('div');div.className='msg ai';div.innerHTML='<div class="bubble" style="padding:0"><div class="typing"><span></span><span></span><span></span></div></div>';msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;return div;}
+function quickAsk(q){document.getElementById('chatInput').value=q;send();}
+function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}const ta=e.target;ta.style.height='40px';ta.style.height=Math.min(ta.scrollHeight,120)+'px';}
+function showErr(msg){const el=document.getElementById('errMsg');el.innerHTML=msg;el.style.display='block';}
+</script>
+</body>
+</html>
