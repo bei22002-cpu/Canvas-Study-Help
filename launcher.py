@@ -104,6 +104,10 @@ class _ProxyHandler(BaseHTTPRequestHandler):
         self.send_cors()
         self.end_headers()
 
+    # Shared domain validation pattern (hostname only — no protocol, no slashes)
+    import re as _re
+    _DOMAIN_RE = _re.compile(r'^[A-Za-z0-9]([A-Za-z0-9\-\.]{0,251}[A-Za-z0-9])?$')
+
     def do_GET(self):
         domain = self.headers.get("X-Canvas-Domain", "").strip()
         auth = self.headers.get("Authorization", "").strip()
@@ -116,6 +120,15 @@ class _ProxyHandler(BaseHTTPRequestHandler):
             self.wfile.write(
                 json.dumps({"error": "Missing X-Canvas-Domain or Authorization header"}).encode()
             )
+            return
+
+        # Validate domain to prevent SSRF: must be a plain hostname, no protocol or path.
+        if not _ProxyHandler._DOMAIN_RE.match(domain) or "/" in domain or ":" in domain:
+            self.send_response(400)
+            self.send_cors()
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"error": "Invalid X-Canvas-Domain value"}).encode())
             return
 
         target = f"https://{domain}{self.path}"

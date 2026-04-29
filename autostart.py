@@ -130,14 +130,14 @@ def _mac_enable() -> None:
 </plist>
 """
     path.write_text(plist)
-    os.system(f"launchctl load '{path}'")  # noqa: S605
+    subprocess.run(["launchctl", "load", str(path)], check=False)
     print(f"[macOS] LaunchAgent installed: {path}")
 
 
 def _mac_disable() -> None:
     path = _mac_plist_path()
     if path.exists():
-        os.system(f"launchctl unload '{path}'")  # noqa: S605
+        subprocess.run(["launchctl", "unload", str(path)], check=False)
         path.unlink()
         print("[macOS] LaunchAgent removed.")
     else:

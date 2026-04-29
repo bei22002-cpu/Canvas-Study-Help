@@ -18,6 +18,9 @@ import os
 PORT = int(os.environ.get("CANVAS_PROXY_PORT", "3001"))
 HOST = os.environ.get("CANVAS_PROXY_HOST", "localhost")
 
+import re as _re
+_DOMAIN_RE = _re.compile(r'^[A-Za-z0-9]([A-Za-z0-9\-\.]{0,251}[A-Za-z0-9])?$')
+
 class ProxyHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         print(f"  {self.command} {self.path} → {args[1]}")
@@ -42,6 +45,15 @@ class ProxyHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Type", "application/json")
             self.end_headers()
             self.wfile.write(json.dumps({"error": "Missing X-Canvas-Domain or Authorization header"}).encode())
+            return
+
+        # Validate domain to prevent SSRF: must be a plain hostname, no protocol or path.
+        if not _DOMAIN_RE.match(domain) or "/" in domain or ":" in domain:
+            self.send_response(400)
+            self.send_cors()
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"error": "Invalid X-Canvas-Domain value"}).encode())
             return
 
         target = f"https://{domain}{self.path}"
